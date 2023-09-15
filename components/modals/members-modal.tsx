@@ -1,95 +1,181 @@
 "use client";
-import { useState } from "react";
-import axios from "axios";
 
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Check,
+  Gavel,
+  Loader2,
+  MoreVertical,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldQuestion,
+} from "lucide-react";
+import { UserAvatar } from "@/components/user-avatar";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuSubContent,
+  DropdownMenuSub,
+  DropdownMenuTrigger,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { useModal } from "@/hooks/use-modal-store";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Check, Copy, RefreshCw } from "lucide-react";
-import { useOrigin } from "@/hooks/use-origin";
+import { ServerWithMembersWithProfile } from "@/types";
+import { useState } from "react";
+import { MemberRole } from "@prisma/client";
+import qs from "query-string";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+
+const roleIconMap = {
+  GUEST: null,
+  MODERATOR: <ShieldCheck className="w-4 h-4 ml-2 text-indigo-500" />,
+  ADMIN: <ShieldAlert className="w-4 h-4 text-rose-500" />,
+};
 
 export const MembersModal = () => {
+  const router = useRouter();
   const { isOpen, onClose, type, data, onOpen } = useModal();
-
-  const origin = useOrigin();
+  const [loadingId, setLoadingId] = useState("");
 
   const isModalOpen = isOpen && type === "members";
 
-  const { server } = data;
+  const { server } = data as { server: ServerWithMembersWithProfile };
 
-  const [copied, setCopied] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const inviteUrl = `${origin}/invite/${server?.inviteCode}`;
-
-  const onCopy = () => {
-    navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-
-    setTimeout(() => {
-      setCopied(false);
-    }, 1000);
-  };
-
-  const onNew = async () => {
+  const onKick = async (memberId: string) => {
     try {
-      setIsLoading(true);
-      const response = await axios.patch(
-        `/api/servers/${server?.id}/invite-code`
-      );
-      onOpen("invite", { server: response.data });
+      setLoadingId(memberId);
+
+      const url = qs.stringifyUrl({
+        url: `/api/members/${memberId}`,
+        query: {
+          serverId: server?.id,
+        },
+      });
+
+      const response = await axios.delete(url);
+      router.refresh();
+      onOpen("members", { server: response.data });
     } catch (error) {
       console.log(error);
     } finally {
-      setIsLoading(false);
+      setLoadingId("");
+    }
+  };
+
+  const onRoleChange = async (memberId: string, role: MemberRole) => {
+    try {
+      setLoadingId(memberId);
+      const url = qs.stringifyUrl({
+        url: `/api/members/${memberId}`,
+        query: {
+          serverId: server?.id,
+        },
+      });
+
+      const response = await axios.patch(url, { role });
+      router.refresh();
+      onOpen("members", { server: response.data });
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoadingId("");
     }
   };
 
   return (
     <Dialog open={isModalOpen} onOpenChange={onClose}>
-      <DialogContent className="p-0 overflow-hidden text-black bg-white">
+      <DialogContent className="overflow-hidden text-black bg-white">
         <DialogHeader className="px-6 pt-8">
           <DialogTitle className="text-2xl font-bold text-center">
-            Invite Friends
+            Manage Members
           </DialogTitle>
+          <DialogDescription className="text-center text-zinc-500">
+            {server?.members?.length} Members
+          </DialogDescription>
         </DialogHeader>
-        <div className="p-6">
-          <Label className="text-xs font-bold uppercase text-zinc-500 dark:text-secondary/70">
-            Server invite link
-          </Label>
-          <div className="flex items-center mt-2 gap-x-2">
-            <Input
-              disabled={isLoading}
-              className="text-black border-0 bg-zinc-300/50 focus-visible:ring-0 focus-visible:ring-offset-0"
-              value={inviteUrl}
-            />
-            <Button onClick={onCopy} size="icon" disabled={isLoading}>
-              {copied ? (
-                <Check className="w-4 h-4" />
-              ) : (
-                <Copy className="w-4 h-4" />
+        <ScrollArea className="mt-8 maxx-h-[420px] pr-6">
+          {server?.members?.map((member) => (
+            <div key={member.id} className="flex items-center mb-6 gap-x-2">
+              <UserAvatar src={member.profile.imageUrl} />
+              <div className="flex flex-col gap-y-1">
+                <div className="flex items-center text-xs font-semibold gap-x-1">
+                  {member.profile.name}
+                  {roleIconMap[member.role]}
+                </div>
+                <p className="text-xs text-zinc-500">{member.profile.email}</p>
+              </div>
+              {server.profileId !== member.profile.id &&
+                loadingId !== member.id && (
+                  <div className="ml-auto">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger>
+                        <MoreVertical className="w-4 h-4 text-zinc-500" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="left">
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="flex items-center">
+                            <ShieldQuestion className="w-4 h-4 mr-2 " />
+                            <span>Role</span>
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => onRoleChange(member.id, "GUEST")}
+                              >
+                                <Shield className="w-4 h-4 mr-2" />
+                                Guest
+                                {member.role === "GUEST" && (
+                                  <Check className="w-4 h-4 ml-auto" />
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() =>
+                                  onRoleChange(member.id, "MODERATOR")
+                                }
+                              >
+                                <ShieldCheck className="w-4 h-4 mr-2" />
+                                Moderator
+                                {member.role === "MODERATOR" && (
+                                  <Check className="w-4 h-4 ml-auto" />
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onKick(member.id)}
+                          className="cursor-pointer"
+                        >
+                          <Gavel className="w-4 h-4 mr-2 " />
+                          Kick
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+              {loadingId === member.id && (
+                <Loader2 className="w-4 h-4 ml-auto animate-spin text-zinc-500" />
               )}
-            </Button>
-          </div>
-          <Button
-            onClick={onNew}
-            disabled={isLoading}
-            variant="link"
-            size="sm"
-            className="mt-4 text-sm text-zinc-500"
-          >
-            Generate a new link
-            <RefreshCw className="w-4 h-4 ml-2" />
-          </Button>
-        </div>
+            </div>
+          ))}
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
