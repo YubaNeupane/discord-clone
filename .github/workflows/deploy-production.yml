@@ -1,4 +1,5 @@
-name: Deploy Production
+name: 
+
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -16,7 +17,7 @@ env:
 on:
   push:
     branches:
-      - 'main'
+      - main
 
 jobs:
   deploy-production:
