@@ -1,14 +1,14 @@
+import { ChannelType, MemberRole } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { Hash, Mic, ShieldAlert, ShieldCheck, Video } from "lucide-react";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { currentProfile } from "@/lib/current-profile";
 import { db } from "@/lib/db";
-import { ChannelType, MemberRole } from "@prisma/client";
-import { channel } from "diagnostics_channel";
-import { redirect } from "next/navigation";
+
 import { ServerHeader } from "./server-header";
 import { ServerSearch } from "./server-search";
-
-import { ScrollArea } from "../ui/scroll-area";
-import { Hash, Mic, ShieldAlert, ShieldCheck, Video } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { ServerSection } from "./server-section";
 import { ServerChannel } from "./server-channel";
 import { ServerMember } from "./server-member";
@@ -23,7 +23,7 @@ const iconMap = {
   [ChannelType.VIDEO]: <Video className="w-4 h-4 mr-2" />,
 };
 
-const roleIconeMap = {
+const roleIconMap = {
   [MemberRole.GUEST]: null,
   [MemberRole.MODERATOR]: (
     <ShieldCheck className="w-4 h-4 mr-2 text-indigo-500" />
@@ -34,7 +34,9 @@ const roleIconeMap = {
 export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
   const profile = await currentProfile();
 
-  if (!profile) return redirect("/");
+  if (!profile) {
+    return redirect("/");
+  }
 
   const server = await db.server.findUnique({
     where: {
@@ -66,12 +68,13 @@ export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
   const videoChannels = server?.channels.filter(
     (channel) => channel.type === ChannelType.VIDEO
   );
-
   const members = server?.members.filter(
     (member) => member.profileId !== profile.id
   );
 
-  if (!server) return redirect("/");
+  if (!server) {
+    return redirect("/");
+  }
 
   const role = server.members.find(
     (member) => member.profileId === profile.id
@@ -117,7 +120,7 @@ export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
                 data: members?.map((member) => ({
                   id: member.id,
                   name: member.profile.name,
-                  icon: roleIconeMap[member.role],
+                  icon: roleIconMap[member.role],
                 })),
               },
             ]}
@@ -188,7 +191,6 @@ export const ServerSidebar = async ({ serverId }: ServerSidebarProps) => {
           <div className="mb-2">
             <ServerSection
               sectionType="members"
-              channelType={ChannelType.VIDEO}
               role={role}
               label="Members"
               server={server}
