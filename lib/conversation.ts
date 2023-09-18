@@ -4,8 +4,6 @@ export const getOrCreateConversation = async (
   memberOneId: string,
   memberTwoId: string
 ) => {
-  console.log("memberOneId", memberOneId);
-  console.log("memberTwoId", memberTwoId);
   let conversation =
     (await findConversation(memberOneId, memberTwoId)) ||
     (await findConversation(memberTwoId, memberOneId));
