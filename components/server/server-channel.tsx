@@ -60,13 +60,13 @@ export const ServerChannel = ({
       </p>
       {channel.name !== "general" && role !== MemberRole.GUEST && (
         <div className="flex items-center ml-auto gap-x-2">
-          <ActionTooltip label="Edit">
+          <ActionTooltip label="Edit" align="center">
             <Edit
               onClick={(e) => onAction(e, "editChannel")}
               className="hidden w-4 h-4 transition group-hover:block text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300"
             />
           </ActionTooltip>
-          <ActionTooltip label="Delete">
+          <ActionTooltip label="Delete" align="center">
             <Trash
               onClick={(e) => onAction(e, "deleteChannel")}
               className="hidden w-4 h-4 transition group-hover:block text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-300"
