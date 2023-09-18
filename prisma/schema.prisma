@@ -60,8 +60,8 @@ model Member {
   messages       Message[]
   directMessages DirectMessage[]
 
-  conservationInitiated Conversation[] @relation("MemberOne")
-  conservationReceived  Conversation[] @relation("MemberTwo")
+  conversationsInitiated Conversation[] @relation("MemberOne")
+  conversationsReceived  Conversation[] @relation("MemberTwo")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -97,8 +97,8 @@ model Channel {
 }
 
 model Message {
-  id       String @id @default(uuid())
-  conetent String @db.Text
+  id      String @id @default(uuid())
+  content String @db.Text
 
   fileUrl String? @db.Text
 
@@ -108,7 +108,7 @@ model Message {
   channelId String
   channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
-  deletedAt Boolean @default(false)
+  deleted Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -129,6 +129,7 @@ model Conversation {
   directMessages DirectMessage[]
 
   @@unique([memberOneId, memberTwoId])
+
   @@index([memberTwoId])
 }
 
