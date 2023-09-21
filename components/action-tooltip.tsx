@@ -18,7 +18,7 @@ export const ActionTooltip = ({
   label,
   children,
   side,
-  align,
+  align = "start",
 }: ActionTooltipProps) => {
   return (
     <TooltipProvider>
