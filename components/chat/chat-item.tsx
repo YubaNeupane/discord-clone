@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { eventNames } from "process";
+import { useRouter, useParams } from "next/navigation";
 import { useModal } from "@/hooks/use-modal-store";
 
 interface ChatItemProps {
@@ -57,6 +57,15 @@ export const ChatItem = ({
 }: ChatItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const { onOpen } = useModal();
+
+  const params = useParams();
+  const router = useRouter();
+
+  const onMemberClick = () => {
+    if (member.id === currentMember.id) return;
+
+    router.push(`/server/${params?.serverId}/conversations/${member.id}`);
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -115,13 +124,19 @@ export const ChatItem = ({
   return (
     <div className="relative flex items-center w-full p-4 transition group hover:bg-black/5">
       <div className="flex items-start w-full group gap-x-2">
-        <div className="transition cursor-pointer hover:drop-shadow-md">
+        <div
+          className="transition cursor-pointer hover:drop-shadow-md"
+          onClick={onMemberClick}
+        >
           <UserAvatar src={member.profile.imageUrl} />
         </div>
         <div className="flex flex-col w-full">
           <div className="flex items-center gap-x-2">
             <div className="flex item-center">
-              <p className="text-sm font-semibold cursor-pointer hover:underline">
+              <p
+                className="text-sm font-semibold cursor-pointer hover:underline"
+                onClick={onMemberClick}
+              >
                 {member.profile.name}
               </p>
               <ActionTooltip label={member.role} align="start">
